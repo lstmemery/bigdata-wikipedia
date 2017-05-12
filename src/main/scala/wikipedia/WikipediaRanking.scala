@@ -52,7 +52,14 @@ object WikipediaRanking {
   /* Compute an inverted index of the set of articles, mapping each language
    * to the Wikipedia pages in which it occurs.
    */
-  def makeIndex(langs: List[String], rdd: RDD[WikipediaArticle]): RDD[(String, Iterable[WikipediaArticle])] = ???
+  def makeIndex(langs: List[String], rdd: RDD[WikipediaArticle]): RDD[(String, Iterable[WikipediaArticle])] = {
+    def getlangIndex(lang: String, rdd: RDD[WikipediaArticle]): Iterable[WikipediaArticle] = {
+      rdd.filter(x => x.mentionsLanguage(lang)).collect()
+    }
+
+    val index = langs.map(x => (x, getlangIndex(x, rdd)))
+    sc.parallelize(index)
+  }
 
   /* (2) Compute the language ranking again, but now using the inverted index. Can you notice
    *     a performance improvement?
