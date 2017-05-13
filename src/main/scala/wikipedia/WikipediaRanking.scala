@@ -21,7 +21,7 @@ object WikipediaRanking {
     "Objective-C", "Perl", "Scala", "Haskell", "MATLAB", "Clojure", "Groovy")
 
   val conf: SparkConf = new SparkConf()
-    .setMaster("local[2]").setAppName("WikipediaLanaguages")
+    .setMaster("local[4]").setAppName("WikipediaLanaguages")
   val sc: SparkContext = new SparkContext(conf)
   // Hint: use a combination of `sc.textFile`, `WikipediaData.filePath` and `WikipediaData.parse`
   val wikiRdd: RDD[WikipediaArticle] = sc.textFile(WikipediaData.filePath)
@@ -68,7 +68,7 @@ object WikipediaRanking {
    *   several seconds.
    */
   def rankLangsUsingIndex(index: RDD[(String, Iterable[WikipediaArticle])]): List[(String, Int)] = {
-    index.map(x => (x._1, x._2.size)).collect().toList
+    index.map(x => (x._1, x._2.size)).collect().sortBy(- _._2).toList
   }
 
   /* (3) Use `reduceByKey` so that the computation of the index and the ranking are combined.
@@ -78,7 +78,14 @@ object WikipediaRanking {
    *   Note: this operation is long-running. It can potentially run for
    *   several seconds.
    */
-  def rankLangsReduceByKey(langs: List[String], rdd: RDD[WikipediaArticle]): List[(String, Int)] = ???
+  def rankLangsReduceByKey(langs: List[String], rdd: RDD[WikipediaArticle]): List[(String, Int)] = {
+    rdd.flatMap(wiki => langs.map(
+      lang => if (wiki.mentionsLanguage(lang)) lang -> 1
+      else "" -> 1)).filter(_._1 != "")
+      .reduceByKey(_ + _)
+      .sortBy(- _._2)
+      .collect().toList
+  }
 
   def main(args: Array[String]) {
 
