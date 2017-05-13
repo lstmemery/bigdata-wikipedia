@@ -33,7 +33,7 @@ object WikipediaRanking {
     */
   def occurrencesOfLang(lang: String, rdd: RDD[WikipediaArticle]): Int = {
     rdd.filter(x => x.mentionsLanguage(lang))
-      .aggregate(0)(seqOp = (x, y) => x + 1, combOp = _ + _)
+      .aggregate(0)(seqOp = (x, _) => x + 1, combOp = _ + _)
   }
 
   /* (1) Use `occurrencesOfLang` to compute the ranking of the languages
@@ -67,7 +67,9 @@ object WikipediaRanking {
    *   Note: this operation is long-running. It can potentially run for
    *   several seconds.
    */
-  def rankLangsUsingIndex(index: RDD[(String, Iterable[WikipediaArticle])]): List[(String, Int)] = ???
+  def rankLangsUsingIndex(index: RDD[(String, Iterable[WikipediaArticle])]): List[(String, Int)] = {
+    index.map(x => (x._1, x._2.size)).collect().toList
+  }
 
   /* (3) Use `reduceByKey` so that the computation of the index and the ranking are combined.
    *     Can you notice an improvement in performance compared to measuring *both* the computation of the index
